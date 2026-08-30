@@ -1,0 +1,163 @@
+version: '3.8'
+
+services:
+  # =========================================================================
+  # 1. Redpanda (Kafka-API Compatible Streaming Backbone)
+  # =========================================================================
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.2.7
+    container_name: sih_redpanda
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp=1
+      - --memory=1G
+      - --reserve-memory=0M
+      - --node-id=0
+      - --check=false
+      - --kafka-addr=PLAINTEXT://0.0.0.0:9092,OUTSIDE://0.0.0.0:19092
+      - --advertise-kafka-addr=PLAINTEXT://redpanda:9092,OUTSIDE://localhost:19092
+      - --pandaproxy-addr=0.0.0.0:8082
+      - --advertise-pandaproxy-addr=localhost:8082
+      - --schema-registry-addr=0.0.0.0:8081
+    ports:
+      - "${KAFKA_INTERNAL_PORT:-9092}:9092"     # Kafka internal broker port
+      - "${KAFKA_EXTERNAL_PORT:-19092}:19092"   # Kafka host external port
+      - "${SCHEMA_REGISTRY_PORT:-8081}:8081"   # Schema registry port
+      - "${REDPANDA_ADMIN_PORT:-9644}:9644"     # Admin API port
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+      - ./config/redpanda/redpanda.yaml:/etc/redpanda/redpanda.yaml:ro
+    networks:
+      - sih_net
+    healthcheck:
+      test: ["CMD", "rpk", "cluster", "health"]
+      interval: 4s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  # =========================================================================
+  # 2. Redpanda Topic Auto-Initializer
+  # =========================================================================
+  redpanda-init:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.2.7
+    container_name: sih_redpanda_init
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    networks:
+      - sih_net
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        echo "Initializing Redpanda Topics for SIH26145..."
+        rpk topic create telemetry.conn --brokers redpanda:9092 -p 4 -r 1 || true
+        rpk topic create telemetry.dns --brokers redpanda:9092 -p 4 -r 1 || true
+        rpk topic create telemetry.ssl --brokers redpanda:9092 -p 4 -r 1 || true
+        rpk topic create alerts.raw --brokers redpanda:9092 -p 4 -r 1 || true
+        rpk topic create incidents.fused --brokers redpanda:9092 -p 1 -r 1 || true
+        echo "Redpanda topic topology successfully created:"
+        rpk topic list --brokers redpanda:9092
+    restart: "no"
+
+  # =========================================================================
+  # 3. Redis 7.x (High-Speed Sliding Window Cache & CEP Buffer)
+  # =========================================================================
+  redis:
+    image: redis:7.4-alpine
+    container_name: sih_redis
+    command: redis-server /usr/local/etc/redis/redis.conf
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+      - ./config/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    networks:
+      - sih_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+      start_period: 2s
+
+  # =========================================================================
+  # 4. PostgreSQL 16 + TimescaleDB (Time-Series Telemetry & Alert Store)
+  # =========================================================================
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: sih_timescaledb
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sih26145}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgrespassword}
+      TS_TUNE_MEMORY: "1GB"
+      TS_TUNE_NUM_CPUS: "2"
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+      - ./config/timescale/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+    networks:
+      - sih_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sih26145"]
+      interval: 4s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  # =========================================================================
+  # 5. Zeek 7.x Passive Sensor with JA4 Plugin
+  # =========================================================================
+  zeek:
+    build:
+      context: .
+      dockerfile: config/zeek/Dockerfile
+    container_name: sih_zeek
+    environment:
+      ZEEK_INTERFACE: "eth0"
+      ZEEK_LOG_DIR: "/logs"
+    volumes:
+      - zeek_logs:/logs
+      - ./logs/zeek:/logs
+      - ./pcaps:/pcaps:ro
+      - ./data/pcaps:/pcaps/data:ro
+      - ./config/zeek/local.zeek:/usr/local/zeek/share/zeek/site/local.zeek:ro
+      - ./config/zeek/ja4.zeek:/usr/local/zeek/share/zeek/site/ja4.zeek:ro
+    networks:
+      - sih_net
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "zeek", "-v"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 3s
+
+networks:
+  sih_net:
+    name: sih_net
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
+
+volumes:
+  redpanda_data:
+    name: sih_redpanda_data
+  redis_data:
+    name: sih_redis_data
+  timescale_data:
+    name: sih_timescale_data
+  zeek_logs:
+    name: sih_zeek_logs

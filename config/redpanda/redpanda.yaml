@@ -1,0 +1,61 @@
+# =============================================================================
+# SIH26145 Redpanda Broker Configuration
+# Tuned for high-throughput, low-latency (>50,000 EPS) passive stream ingestion
+# =============================================================================
+
+redpanda:
+  data_directory: /var/lib/redpanda/data
+  node_id: 0
+  seed_servers: []
+  empty_seed_starts_cluster: true
+  developer_mode: true
+  auto_create_topics_enabled: true
+  default_topic_partitions: 4
+  default_topic_replications: 1
+  
+  # RPC Server Configuration
+  rpc_server:
+    address: 0.0.0.0
+    port: 33145
+
+  # Kafka API Listeners: 9092 for container network, 19092 for external host access
+  kafka_api:
+    - name: internal
+      address: 0.0.0.0
+      port: 9092
+    - name: external
+      address: 0.0.0.0
+      port: 19092
+
+  advertised_kafka_api:
+    - name: internal
+      address: redpanda
+      port: 9092
+    - name: external
+      address: localhost
+      port: 19092
+
+  admin:
+    - address: 0.0.0.0
+      port: 9644
+
+schema_registry:
+  schema_registry_api:
+    - address: 0.0.0.0
+      port: 8081
+
+pandaproxy:
+  pandaproxy_api:
+    - address: 0.0.0.0
+      port: 8082
+  advertised_pandaproxy_api:
+    - address: localhost
+      port: 8082
+
+rpk:
+  kafka_api:
+    brokers:
+      - 127.0.0.1:9092
+  admin_api:
+    addresses:
+      - 127.0.0.1:9644
