@@ -5,7 +5,7 @@ Computes sustained EPS, line-rate throughput (Mbps), latency percentiles, and lo
 
 import time
 import math
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 
 
 class MetricsCalculator:
@@ -13,7 +13,8 @@ class MetricsCalculator:
     Calculates quantifiable streaming metrics for benchmarking and monitoring.
     """
 
-    def __init__(self):
+    def __init__(self, window_seconds: Optional[float] = None):
+        self.window_seconds = window_seconds
         self.reset()
 
     def reset(self) -> None:
@@ -34,12 +35,49 @@ class MetricsCalculator:
         """Record stop time."""
         self.end_time = time.perf_counter()
 
-    def record_event(self, byte_size: int = 0, latency_ms: Optional[float] = None) -> None:
+    def record_event(
+        self,
+        byte_size: int = 0,
+        latency_ms: Optional[float] = None,
+        payload_bytes: Optional[int] = None,
+        latency_ns: Optional[Union[int, float]] = None,
+    ) -> None:
         """Record a single processed telemetry event."""
+        effective_bytes = payload_bytes if payload_bytes is not None else byte_size
+        effective_latency_ms = (latency_ns / 1_000_000.0) if latency_ns is not None else latency_ms
+
         self.total_events += 1
-        self.total_bytes += byte_size
-        if latency_ms is not None and latency_ms >= 0:
-            self.latencies_ms.append(latency_ms)
+        self.total_bytes += effective_bytes
+        if effective_latency_ms is not None and effective_latency_ms >= 0:
+            self.latencies_ms.append(effective_latency_ms)
+
+    @property
+    def p50_latency_ms(self) -> float:
+        return self.calculate_percentiles()["p50_ms"]
+
+    @property
+    def p90_latency_ms(self) -> float:
+        return self.calculate_percentiles()["p90_ms"]
+
+    @property
+    def p95_latency_ms(self) -> float:
+        return self.calculate_percentiles()["p95_ms"]
+
+    @property
+    def p99_latency_ms(self) -> float:
+        return self.calculate_percentiles()["p99_ms"]
+
+    @property
+    def max_latency_ms(self) -> float:
+        return self.calculate_percentiles()["max_ms"]
+
+    @property
+    def min_latency_ms(self) -> float:
+        return self.calculate_percentiles()["min_ms"]
+
+    @property
+    def avg_latency_ms(self) -> float:
+        return self.calculate_percentiles()["avg_ms"]
 
     def record_batch(self, count: int, total_bytes: int = 0, latencies: Optional[List[float]] = None) -> None:
         """Record a batch of processed telemetry events."""
