@@ -4,7 +4,7 @@
 
 **Smart India Hackathon 2026** | **Problem Statement:** SIH26145 | **Sponsoring Org:** National Technical Research Organisation (NTRO)  
 **Theme:** Blockchain & Cybersecurity  
-**Status:** Phase 0, Phase 1, and Phase 2 Complete (383/383 Tests Passing, Line-Rate Benchmark Verified)
+**Status:** ✅ Phase 0 · Phase 1 · Phase 2 · Phase 3 · Phase 4 Complete — **581/581 Tests Passing** | Commit `b83861c`
 
 ---
 
@@ -113,11 +113,11 @@ All detectors inherit from `BaseDetector` and process streaming events lock-free
 
 ### Automated Test Suite
 ```bash
-pytest
-======================= 383 passed in 128.03s =======================
+pytest tests/ -q
+======================= 581 passed in 139.59s (0:02:19) =======================
 ```
-- **Total Test Cases**: **383 / 383 Passed (100% Pass Rate)**
-- **Test Categories**: Unit tests, adversarial challenge tests, boundary stress tests, JA4 protocol conformance, and E2E multi-detector integration tests.
+- **Total Test Cases**: **581 / 581 Passed (100% Pass Rate)** — covers all Phase 0–4 modules
+- **Test Categories**: Unit tests, adversarial challenge tests, boundary stress tests, JA4 protocol conformance, CEP aggregator stress/flood, LangGraph E2E triage, countermeasure artifact syntax, data-diode safety enforcement, and full opaque-box integration tests.
 
 ### Line-Rate Throughput Benchmark Summary
 *Target Pipeline: Traffic Replay $\rightarrow$ Zeek (JA4) $\rightarrow$ Redpanda $\rightarrow$ TimescaleDB*
@@ -227,13 +227,69 @@ pytest tests/test_detectors_latency.py -v -s
 - [x] **Phase 0**: Containerized infrastructure, traffic replay harness, and Day-1 throughput benchmark.
 - [x] **Phase 1**: Ingest & partitioning pipeline with deterministic `hash(source_ip)` flow locality.
 - [x] **Phase 2**: Six parallel streaming threat detectors with sub-millisecond per-event latency.
-- [ ] **Phase 3**: Fast In-Memory Aggregator & Complex Event Processing (CEP) sliding window buffer.
-- [ ] **Phase 4**: LangGraph Agentic Triage Engine & Deterministic Out-of-Band Countermeasure Generation.
+- [x] **Phase 3**: Fast In-Memory CEP Aggregator — sliding window buffer, burst limiter, multi-detector fusion.
+- [x] **Phase 4**: LangGraph Agentic Triage Engine & Deterministic Out-of-Band Countermeasure Generation.
 - [ ] **Phase 5**: Real-time FastAPI WebSocket backend & Next.js Cyberpunk SOC Analyst Dashboard.
 - [ ] **Phase 6**: Multi-stage APT end-to-end rehearsal and judge demonstration.
 
 ---
 
-## 8. License
+## 8. Phase 3: Fast In-Memory CEP Aggregator (`src/cep/`)
+
+The CEP engine consumes raw alerts from `alerts.raw`, collapses alert floods into structured incident contexts, and publishes to `incidents.fused`.
+
+| Module | Responsibility |
+|---|---|
+| `sliding_window.py` | Per-host and subnet sliding window buffers (30s–120s, configurable) |
+| `deduplicator.py` | Fingerprint-based deduplication with confidence-weighted coalescing |
+| `burst_limiter.py` | Token-bucket rate limiting to bound downstream alert volume |
+| `correlator.py` | Multi-detector signal fusion rules → `FusedIncident` objects |
+| `engine.py` | Central `CEPEngine` orchestrating all subsystems |
+| `models.py` | `FusedIncident`, `DeduplicationRecord`, `HostSlidingWindow` schemas |
+
+**Verified:** 66 CEP-specific test cases passing across unit, stress, and adversarial suites.
+
+---
+
+## 9. Phase 4: LangGraph Agentic Triage & Countermeasure Engine (`src/agentic_triage/`)
+
+A 5-node deterministic LangGraph `StateGraph` processes every `FusedIncident` in **< 2.0 seconds** with no external API dependencies (air-gap safe).
+
+### Graph Topology
+
+```
+START → [Correlation] → [Risk Scoring] → [Classification] → [Countermeasures] → [Handoff] → END
+```
+
+| Node | Module | Output |
+|---|---|---|
+| **Correlation** | `nodes/correlation_node.py` | Chronological attack timeline, multi-stage flag |
+| **Risk Scoring** | `nodes/risk_scoring_node.py` | $\text{score} = \min(100, \sum w_i \cdot \text{conf}_i \cdot \text{criticality})$ |
+| **Classification** | `nodes/classification_node.py` | MITRE ATT&CK technique IDs, kill-chain phase, executive narrative |
+| **Countermeasures** | `nodes/countermeasure_node.py` | 6 artifact types (see below) |
+| **Handoff** | `nodes/handoff_node.py` | TimescaleDB persistence + out-of-band SOC dispatch |
+
+### Countermeasure Artifact Generators (`src/agentic_triage/countermeasures/`)
+
+All 6 generators are **offline-capable**, **fully deterministic**, and enforce `requires_human_approval: true` on every artifact:
+
+| Artifact Type | Module | Format |
+|---|---|---|
+| `iptables` | `iptables_generator.py` | Linux `iptables` / `ip6tables` DROP rules + `ip6tables` chains |
+| `nftables` | `nftables_generator.py` | `nft(8)` set-based IP blocklist ruleset |
+| `cisco_acl` | `cisco_acl_generator.py` | Cisco IOS extended named ACL with wildcard masks |
+| `dns_rpz` | `dns_rpz_generator.py` | BIND 9 / Unbound RPZ zone file (`CNAME .` sinkhole + `rpz-ip` triggers) |
+| `snort3` | `snort_generator.py` | Snort 3 / Suricata alert rules (tcp/udp/icmp/`tls.ja4`) |
+| `stix_bundle` | `stix_generator.py` | STIX 2.1 JSON Bundle (Indicator + AttackPattern + Relationship SDOs) |
+
+### Data Diode Safety Guarantee
+
+> **Every artifact generated by this system carries `requires_human_approval: true`.**
+> The monitoring enclave operates behind a hardware data diode with **zero return-path execution**.
+> No rule, firewall command, or API call is ever automatically applied to the production network.
+
+---
+
+## 10. License
 
 Developed for **Smart India Hackathon 2026** (Problem Statement SIH26145 - NTRO). All rights reserved.
