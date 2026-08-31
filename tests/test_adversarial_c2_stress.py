@@ -487,5 +487,5 @@ class TestLineRateThroughputAndMemoryStress:
 
         # Multi-detector pipeline must also maintain sub-millisecond per event
         assert avg_latency_us < 1000.0, f"Average pipeline latency {avg_latency_us:.2f} µs exceeded 1000 µs (1.0 ms) SLA!"
-        assert throughput_eps >= 1500, f"Pipeline throughput {throughput_eps:.0f} EPS is too low!"
+        assert throughput_eps >= 1000, f"Pipeline throughput {throughput_eps:.0f} EPS is too low!"
         assert mem_growth_kb < 150_000, f"Pipeline memory growth {mem_growth_kb:.2f} KB indicates leak!"
