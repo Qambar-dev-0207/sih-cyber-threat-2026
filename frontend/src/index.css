@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,70 +7,193 @@
 @layer base {
   :root {
     color-scheme: dark;
+
+    /* ── SIH 2026 Brand Colors (exact match) ── */
+    --accent:        #05F5D7;          /* Bright SIH cyan-teal */
+    --accent-dim:    rgba(5,245,215,0.10);
+    --accent-border: rgba(5,245,215,0.28);
+    --accent-blue:   #2D7EFF;          /* SIH action blue */
+    --accent-blue-dim: rgba(45,126,255,0.12);
+
+    /* ── Backgrounds ── */
+    --bg-0:    #080C14;                /* Deepest: page base */
+    --bg-1:    #0C1220;                /* Section bg */
+    --bg-2:    #111827;                /* Elevated */
+    --bg-card: #0F1828;                /* Default card */
+    --bg-tag:  #141E30;                /* Dark tag / chip fill */
+
+    /* ── Borders ── */
+    --border:        rgba(5,245,215,0.08);
+    --border-strong: rgba(5,245,215,0.18);
+    --border-blue:   rgba(45,126,255,0.25);
+
+    /* ── Typography ── */
+    --text-primary:   #F0F4FA;
+    --text-secondary: #8B9BB4;
+    --text-dim:       #3D4E6A;
+
+    /* ── Severity ── */
+    --critical: #FF4D4D;
+    --high:     #FF8C42;
+    --medium:   #FFD166;
+    --low:      #05F5D7;               /* Use SIH teal for "safe" */
   }
 
   body {
-    background-color: #06080F;
-    color: #F1F5F9;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    background-color: var(--bg-0);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .font-mono, code, .mono {
+    font-family: 'IBM Plex Mono', 'Fira Code', monospace;
   }
 }
 
-/* Custom Tactical Scrollbars */
-::-webkit-scrollbar {
+/* ── Scrollbars ── */
+::-webkit-scrollbar           { width: 4px; height: 4px; }
+::-webkit-scrollbar-track     { background: transparent; }
+::-webkit-scrollbar-thumb     { background: rgba(5,245,215,0.15); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(5,245,215,0.35); }
+
+/* ── Global grid overlay ── */
+.grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(5,245,215,0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(5,245,215,0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* ── Cards ── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.card-elevated {
+  background: var(--bg-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+}
+
+/* Teal left-border accent (SIH doc style) */
+.card-accent {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  border-radius: 6px;
+}
+
+/* ── Accent glow ── */
+.accent-glow {
+  box-shadow: 0 0 24px rgba(5,245,215,0.10);
+}
+
+/* ── Severity text ── */
+.sev-critical { color: var(--critical); }
+.sev-high     { color: var(--high); }
+.sev-medium   { color: var(--medium); }
+.sev-low      { color: var(--low); }
+
+/* Severity bg chips */
+.sev-critical-bg { background: rgba(255,77,77,0.08);   border-color: rgba(255,77,77,0.30); }
+.sev-high-bg     { background: rgba(255,140,66,0.08);  border-color: rgba(255,140,66,0.30); }
+.sev-medium-bg   { background: rgba(255,209,102,0.08); border-color: rgba(255,209,102,0.30); }
+.sev-low-bg      { background: rgba(5,245,215,0.08);   border-color: rgba(5,245,215,0.30); }
+
+/* ── Status dot ── */
+.dot-live {
   width: 6px;
   height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
 }
 
-::-webkit-scrollbar-track {
-  background: #080D1A;
+/* ── Tag Chips (SIH document style — dark fill, teal or blue border) ── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border: 1px solid;
+  white-space: nowrap;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #1E293B;
-  border-radius: 3px;
+/* Teal chip — matches SIH "passive capture", "streaming" tags */
+.chip-teal {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  background: var(--accent-dim);
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #06B6D4;
+/* Blue chip — matches SIH action-blue style */
+.chip-blue {
+  color: var(--accent-blue);
+  border-color: var(--border-blue);
+  background: var(--accent-blue-dim);
 }
 
-/* Keyframe Animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+/* Red/amber/slate chips */
+.chip-red   { color: var(--critical); border-color: rgba(255,77,77,0.30);    background: rgba(255,77,77,0.08); }
+.chip-amber { color: var(--medium);   border-color: rgba(255,209,102,0.30);  background: rgba(255,209,102,0.08); }
+.chip-slate { color: var(--text-secondary); border-color: var(--border-strong); background: rgba(255,255,255,0.04); }
+
+/* ── Animations ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@keyframes pulse-accent {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--accent); }
+  50%       { opacity: 0.5; box-shadow: 0 0 16px var(--accent); }
 }
 
-.animate-fadeIn {
-  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+@keyframes scan-line {
+  0%   { transform: translateY(-100%); opacity: 0; }
+  50%  { opacity: 0.5; }
+  100% { transform: translateY(100%); opacity: 0; }
 }
 
-.animate-slideUp {
-  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+@keyframes dash-flow {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -32; }
 }
 
-/* Cyber Scanning Grid Background Pattern */
-.cyber-grid-bg {
-  background-size: 30px 30px;
-  background-image: 
-    linear-gradient(to right, rgba(30, 41, 59, 0.2) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(30, 41, 59, 0.2) 1px, transparent 1px);
+.animate-fadeUp        { animation: fadeUp 0.25s ease forwards; }
+.animate-pulse-accent  { animation: pulse-accent 2s ease-in-out infinite; }
+
+/* ── Connector dashes ── */
+.connector-dashed {
+  border-left: 1px dashed rgba(5,245,215,0.25);
+}
+
+/* ── Section header label (like "SIH IDEA SUBMISSION" in docs) ── */
+.section-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* ── Process-flow step tags (dark filled, like the numbered steps in SIH doc) ── */
+.step-tag {
+  background: var(--bg-tag);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--text-primary);
 }

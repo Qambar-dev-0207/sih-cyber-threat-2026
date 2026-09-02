@@ -3,8 +3,10 @@ import { Header } from './components/layout/Header';
 import { DiodeBadge } from './components/layout/DiodeBadge';
 import { StatusBar } from './components/layout/StatusBar';
 import { DemoControlBar } from './components/simulation/DemoControlBar';
-import { TelemetryMeter } from './components/telemetry/TelemetryMeter';
 import { DetectorGrid } from './components/telemetry/DetectorGrid';
+import { LiveAreaChart } from './components/telemetry/LiveAreaChart';
+import { IncidentHeatmap } from './components/telemetry/IncidentHeatmap';
+import { CompoundRiskEngine } from './components/telemetry/CompoundRiskEngine';
 import { ThreatFeed } from './components/incidents/ThreatFeed';
 import { InvestigationDrawer } from './components/investigation/InvestigationDrawer';
 import { Toast } from './components/common/Toast';
@@ -13,10 +15,8 @@ import { useIncidentStream } from './hooks/useIncidentStream';
 import { useSimulation } from './hooks/useSimulation';
 
 export const App: React.FC = () => {
-  // Real-time telemetry stream
   const { metrics, history, connectionStatus, streamMode, reconnect } = useTelemetryStream();
 
-  // Incidents stream & drawer management
   const {
     filteredIncidents,
     selectedIncident,
@@ -35,7 +35,6 @@ export const App: React.FC = () => {
     clearAlert,
   } = useIncidentStream();
 
-  // Simulation execution triggers
   const { triggerSimulation, isSimulating, activeScenario, lastResult } = useSimulation({
     onIncidentGenerated: (inc) => {
       upsertIncident(inc);
@@ -44,28 +43,33 @@ export const App: React.FC = () => {
     onSelectIncident: (id) => setSelectedIncidentId(id),
   });
 
-  return (
-    <div className="min-h-screen bg-[#04060B] text-slate-100 flex flex-col font-sans relative overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200">
-      {/* Background Cyber Ambient Glows */}
-      <div className="fixed top-0 left-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
-      <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-red-500/5 rounded-full blur-3xl pointer-events-none" />
+  const activeDetectorsCount = Object.values(metrics?.active_detectors ?? {}).filter(Boolean).length;
 
-      {/* 1. Master Header with Live System Status */}
+  return (
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-0)', color: 'var(--text-primary)' }}>
+      {/* Global grid overlay — SIH teal-tinted */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          backgroundImage:
+            'linear-gradient(to right, rgba(5,245,215,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(5,245,215,0.03) 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
+        }}
+      />
+
       <Header
         connectionStatus={connectionStatus}
         streamMode={streamMode}
         onReconnect={reconnect}
-        eps={metrics.events_per_sec}
-        mbps={metrics.mbps}
-        totalEvents={metrics.total_events_processed}
+        eps={metrics?.events_per_sec ?? 0}
+        mbps={metrics?.mbps ?? 0}
+        totalEvents={metrics?.total_events_processed ?? 0}
       />
-
-      {/* 2. Permanent Hardware Data Diode Safety Badge */}
       <DiodeBadge />
 
-      {/* Main Command Center Body */}
-      <main className="max-w-7xl mx-auto w-full px-4 py-4 space-y-4 flex-1">
-        {/* 3. Live Presentation & Demo Scenario Control Bar */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-4 space-y-3 relative z-10">
+
+        {/* ── Row 1: Scenario Injection ── */}
         <DemoControlBar
           onTrigger={triggerSimulation}
           isSimulating={isSimulating}
@@ -73,16 +77,38 @@ export const App: React.FC = () => {
           lastResult={lastResult}
         />
 
-        {/* 4. Live Line-Rate Telemetry Meter (EPS, Mbps, Loss, Latency Sparkline) */}
-        <TelemetryMeter metrics={metrics} history={history} />
+        {/* ── Row 2: Live Area Charts (EPS · Bandwidth · Latency · Buffer) ── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <LiveAreaChart history={history} field="eps"        label="Events / Sec"      unit="EPS"  color="var(--accent)" />
+          <LiveAreaChart history={history} field="mbps"       label="Line Bandwidth"    unit="Mbps" color="#60A5FA" />
+          <LiveAreaChart history={history} field="latency_ms" label="Pipeline Latency"  unit="µs"   color="#A78BFA" />
+          {/* 4th slot: compact buffer/loss tile */}
+          <div className="card flex flex-col items-center justify-center py-5 font-mono text-center gap-1">
+            <div className="text-3xl font-black tabular-nums" style={{ color: 'var(--accent)' }}>
+              {(metrics?.buffer_utilization_pct ?? 0).toFixed(1)}<span className="text-lg">%</span>
+            </div>
+            <div className="text-[9px] tracking-widest" style={{ color: 'var(--text-dim)' }}>BUFFER UTIL</div>
+            <div
+              className="text-[10px] font-semibold mt-1"
+              style={{ color: (metrics?.packet_loss_pct ?? 0) > 0.1 ? 'var(--critical)' : 'var(--low)' }}
+            >
+              LOSS {(metrics?.packet_loss_pct ?? 0).toFixed(3)}%
+            </div>
+          </div>
+        </div>
 
-        {/* 5. 6-Engine Matrix Streaming Threat Detectors */}
-        <DetectorGrid activeDetectors={metrics.active_detectors} />
+        {/* ── Row 3: Compound Risk Engine (workflow visualization) ── */}
+        <CompoundRiskEngine incident={selectedIncident} metrics={metrics} />
 
-        {/* 6. Primary Operations Grid: Live Threat Feed & Investigation Drawer */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-          {/* Left Column: Live Threat Feed (5 cols on lg) */}
-          <div className="lg:col-span-5 h-full">
+        {/* ── Row 4: Detector Matrix ── */}
+        <DetectorGrid activeDetectors={metrics?.active_detectors} />
+
+        {/* ── Row 5: Attack Intensity Heatmap ── */}
+        <IncidentHeatmap incidents={filteredIncidents} />
+
+        {/* ── Row 6: Threat Feed + Investigation Drawer ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3" style={{ minHeight: 520 }}>
+          <div className="lg:col-span-5 flex flex-col">
             <ThreatFeed
               incidents={filteredIncidents}
               selectedIncidentId={selectedIncidentId}
@@ -96,9 +122,7 @@ export const App: React.FC = () => {
               severityCounts={severityCounts}
             />
           </div>
-
-          {/* Right Column: Deep Forensic Investigation Drawer & Countermeasure Center (7 cols on lg) */}
-          <div className="lg:col-span-7 h-full">
+          <div className="lg:col-span-7 flex flex-col">
             {selectedIncident ? (
               <InvestigationDrawer
                 incident={selectedIncident}
@@ -106,34 +130,28 @@ export const App: React.FC = () => {
                 onToggleApproval={toggleHumanApproval}
               />
             ) : (
-              <div className="bg-[#080D1A] border border-slate-800 rounded-lg p-12 text-center font-mono text-slate-500 flex flex-col items-center justify-center space-y-2">
-                <span className="w-3 h-3 rounded-full bg-cyan-500 animate-ping mb-2" />
-                <h4 className="font-bold text-slate-300 uppercase text-sm">NO INCIDENT SELECTED</h4>
-                <p className="text-xs max-w-sm text-slate-400">
-                  Select an incident card from the live threat feed to open forensic investigation tools, view attack timelines, and inspect generated countermeasures.
-                </p>
+              <div className="card flex-1 flex flex-col items-center justify-center py-16 text-center" style={{ minHeight: 200 }}>
+                <div className="font-mono text-[11px] mb-1" style={{ color: 'var(--text-dim)' }}>SELECT AN INCIDENT</div>
+                <div className="font-mono text-[10px]" style={{ color: 'var(--text-dim)' }}>
+                  Click any threat card to open investigation · The Compound Risk Engine updates automatically
+                </div>
               </div>
             )}
           </div>
         </div>
       </main>
 
-      {/* 7. Bottom Status Bar */}
       <StatusBar
-        totalEvents={metrics.total_events_processed}
-        activeDetectorsCount={6}
-        bufferUtilization={metrics.buffer_utilization_pct}
-        pipelineLatency={metrics.pipeline_latency_ms}
+        totalEvents={metrics?.total_events_processed ?? 0}
+        activeDetectorsCount={activeDetectorsCount}
+        bufferUtilization={metrics?.buffer_utilization_pct ?? 0}
+        pipelineLatency={metrics?.pipeline_latency_ms ?? 0}
       />
 
-      {/* 8. Toast Alerts for Incoming Threats */}
       <Toast
         incident={newIncidentAlert}
         onClose={clearAlert}
-        onInvestigate={(id) => {
-          setSelectedIncidentId(id);
-          clearAlert();
-        }}
+        onInvestigate={(id) => { setSelectedIncidentId(id); clearAlert(); }}
       />
     </div>
   );

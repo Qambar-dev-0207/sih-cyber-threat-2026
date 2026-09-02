@@ -1,0 +1,71 @@
+{
+  "throughput": {
+    "bus_single_thread_eps": 227545.3679932466,
+    "bus_single_thread_time_s": 0.109868200001074,
+    "bus_multithread_4w_eps": 169441.61194673774,
+    "bus_multithread_4w_time_s": 0.2950868999978411,
+    "detector_manager_eps": 13168.31641968255,
+    "detector_manager_time_s": 1.8984963000002608,
+    "cep_engine_ingest_eps": 31163.993221962675,
+    "cep_engine_ingest_time_s": 1.604415699999663
+  },
+  "memory": {
+    "net_growth_50k_mb": 3.1656293869018555,
+    "net_growth_5cycles_mb": 4.808529853820801,
+    "current_traced_heap_mb": 7.974822998046875,
+    "peak_traced_heap_mb": 8.055624008178711
+  },
+  "latencies": {
+    "ingest_to_alert": {
+      "p50_ms": 0.05699999746866524,
+      "p90_ms": 0.0853000019560568,
+      "p95_ms": 0.09859999772743322,
+      "p99_ms": 0.1311999985773582,
+      "max_ms": 1.8858999974327162
+    },
+    "agentic_triage": {
+      "p50_ms": 10.754499999166,
+      "p90_ms": 13.968999999633525,
+      "p95_ms": 15.293700002075639,
+      "p99_ms": 17.74400000067544,
+      "max_ms": 17.74400000067544
+    },
+    "e2e_pipeline": {
+      "p50_ms": 15.575599998555845,
+      "p90_ms": 18.25769999777549,
+      "p99_ms": 19.688899999891873,
+      "max_ms": 19.688899999891873
+    }
+  },
+  "accounting": {
+    "Massive Burst Flood": {
+      "ingested": 20000,
+      "correlated": 1,
+      "rate_limited": 19981,
+      "deduplicated": 18,
+      "dropped": 0,
+      "zero_dropped_invariant_met": true
+    },
+    "Severe Duplicate Storm": {
+      "ingested": 10000,
+      "correlated": 1,
+      "rate_limited": 9941,
+      "deduplicated": 58,
+      "dropped": 0,
+      "zero_dropped_invariant_met": true
+    },
+    "Heterogeneous Complex Stream": {
+      "ingested": 30000,
+      "correlated": 201,
+      "rate_limited": 25716,
+      "deduplicated": 4083,
+      "dropped": 0,
+      "zero_dropped_invariant_met": true
+    }
+  },
+  "diode": {
+    "synthetic_traps_detected": 4,
+    "pipeline_strict_guard_clean": true
+  },
+  "total_elapsed_s": 42.548826199999894
+}

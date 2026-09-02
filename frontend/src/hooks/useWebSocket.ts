@@ -33,15 +33,59 @@ export function useWebSocket<T = any>({
   const reconnectTimeoutRef = useRef<number | null>(null);
   const isUnmountedRef = useRef(false);
 
+  // Store latest callbacks and options in refs so inline caller functions don't trigger reconnect cascades
+  const callbacksRef = useRef({
+    onMessage,
+    onOpen,
+    onClose,
+    onError,
+    onFallback,
+  });
+  callbacksRef.current = {
+    onMessage,
+    onOpen,
+    onClose,
+    onError,
+    onFallback,
+  };
+
+  const configRef = useRef({
+    reconnectInterval,
+    maxReconnectAttempts,
+  });
+  configRef.current = {
+    reconnectInterval,
+    maxReconnectAttempts,
+  };
+
   const connect = useCallback(() => {
-    if (!enabled || typeof window === 'undefined') return;
+    if (!enabled || typeof window === 'undefined' || isUnmountedRef.current) return;
+
+    // Clean up any stale socket before opening a new connection
+    if (socketRef.current) {
+      try {
+        socketRef.current.onopen = null;
+        socketRef.current.onmessage = null;
+        socketRef.current.onerror = null;
+        socketRef.current.onclose = null;
+        if (socketRef.current.readyState === WebSocket.OPEN || socketRef.current.readyState === WebSocket.CONNECTING) {
+          socketRef.current.close(1000, 'Reconnecting');
+        }
+      } catch {
+        // Ignore close error
+      }
+      socketRef.current = null;
+    }
 
     try {
       // Determine protocol and host
       let wsUrl = url;
       if (!url.startsWith('ws://') && !url.startsWith('wss://')) {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.host;
+        const isViteDev = window.location.port === '5173';
+        const host = isViteDev
+          ? `${window.location.hostname}:8000`
+          : window.location.host;
         wsUrl = `${protocol}//${host}${url.startsWith('/') ? '' : '/'}${url}`;
       }
 
@@ -50,56 +94,63 @@ export function useWebSocket<T = any>({
       socketRef.current = ws;
 
       ws.onopen = () => {
-        if (isUnmountedRef.current) return;
+        if (isUnmountedRef.current || socketRef.current !== ws) return;
         setStatus('CONNECTED');
         setReconnectCount(0);
-        onOpen?.();
+        callbacksRef.current.onOpen?.();
       };
 
       ws.onmessage = (event) => {
-        if (isUnmountedRef.current) return;
+        if (isUnmountedRef.current || socketRef.current !== ws) return;
         try {
           const parsed = JSON.parse(event.data) as T;
           setLastMessage(parsed);
-          onMessage?.(parsed);
+          callbacksRef.current.onMessage?.(parsed);
         } catch {
           // Non-JSON message
           setLastMessage(event.data as unknown as T);
-          onMessage?.(event.data as unknown as T);
+          callbacksRef.current.onMessage?.(event.data as unknown as T);
         }
       };
 
       ws.onerror = (error) => {
-        if (isUnmountedRef.current) return;
-        onError?.(error);
+        if (isUnmountedRef.current || socketRef.current !== ws) return;
+        callbacksRef.current.onError?.(error);
       };
 
-      ws.onclose = () => {
-        if (isUnmountedRef.current) return;
+      ws.onclose = (event) => {
+        if (isUnmountedRef.current || socketRef.current !== ws) return;
         socketRef.current = null;
-        onClose?.();
+        callbacksRef.current.onClose?.();
+
+        // If closed intentionally via 1000 on unmount, do not reconnect
+        if (event.code === 1000 && event.reason === 'Unmounted') {
+          return;
+        }
 
         setReconnectCount((prev) => {
           const next = prev + 1;
-          if (next > maxReconnectAttempts) {
+          if (next > configRef.current.maxReconnectAttempts) {
             setStatus('FALLBACK_POLLING');
-            onFallback?.();
+            callbacksRef.current.onFallback?.();
           } else {
             setStatus('DISCONNECTED');
             // Schedule reconnect
             if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
             reconnectTimeoutRef.current = window.setTimeout(() => {
-              connect();
-            }, reconnectInterval * Math.min(next, 3));
+              if (!isUnmountedRef.current) {
+                connect();
+              }
+            }, configRef.current.reconnectInterval * Math.min(next, 3));
           }
           return next;
         });
       };
     } catch {
       setStatus('FALLBACK_POLLING');
-      onFallback?.();
+      callbacksRef.current.onFallback?.();
     }
-  }, [enabled, url, reconnectInterval, maxReconnectAttempts, onMessage, onOpen, onClose, onError, onFallback]);
+  }, [enabled, url]);
 
   const sendMessage = useCallback((message: any) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
@@ -111,9 +162,9 @@ export function useWebSocket<T = any>({
   }, []);
 
   const manualReconnect = useCallback(() => {
-    if (socketRef.current) {
-      socketRef.current.close();
-      socketRef.current = null;
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
     }
     setReconnectCount(0);
     connect();
@@ -125,9 +176,20 @@ export function useWebSocket<T = any>({
 
     return () => {
       isUnmountedRef.current = true;
-      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
       if (socketRef.current) {
-        socketRef.current.close();
+        try {
+          socketRef.current.onopen = null;
+          socketRef.current.onmessage = null;
+          socketRef.current.onerror = null;
+          socketRef.current.onclose = null;
+          socketRef.current.close(1000, 'Unmounted');
+        } catch {
+          // Ignore
+        }
         socketRef.current = null;
       }
     };

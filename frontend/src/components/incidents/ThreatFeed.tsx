@@ -2,7 +2,6 @@ import React from 'react';
 import { FusedIncident, SeverityLevel } from '../../types';
 import { IncidentCard } from './IncidentCard';
 import { IncidentFilters } from './IncidentFilters';
-import { ShieldAlert, Radio, Activity } from 'lucide-react';
 
 interface ThreatFeedProps {
   incidents: FusedIncident[];
@@ -30,48 +29,42 @@ export const ThreatFeed: React.FC<ThreatFeedProps> = ({
   severityCounts,
 }) => {
   return (
-    <div className="w-full bg-[#080D1A] border border-slate-800 rounded-lg p-4 shadow-panel space-y-3 flex flex-col h-full">
+    <div className="card flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+      <div
+        className="flex items-center justify-between px-4 py-3 flex-shrink-0"
+        style={{ borderBottom: '1px solid var(--border)' }}
+      >
         <div className="flex items-center gap-2">
-          <ShieldAlert className="w-4 h-4 text-red-400 animate-pulse" />
-          <h3 className="font-mono text-xs sm:text-sm font-bold tracking-wider text-slate-100 uppercase">
-            Live Threat Feed & Incident Matrix
-          </h3>
-        </div>
-
-        <div className="flex items-center gap-2 font-mono text-[11px]">
-          <span className="flex items-center gap-1 text-cyan-400">
-            <Radio className="w-3 h-3 animate-pulse" />
-            <span>REAL-TIME STREAM</span>
-          </span>
-          <span className="text-slate-500">|</span>
-          <span className="text-slate-300 font-bold bg-slate-800 px-2 py-0.5 rounded">
-            {incidents.length} Fused Incidents
+          <span className="dot-live animate-pulse-accent" />
+          <span className="font-mono text-xs font-semibold tracking-widest uppercase" style={{ color: 'var(--text-primary)' }}>
+            Live Threat Feed
           </span>
         </div>
+        <span className="font-mono text-[11px]" style={{ color: 'var(--text-secondary)' }}>
+          {incidents.length} incidents
+        </span>
       </div>
 
-      {/* Filter Component */}
-      <IncidentFilters
-        severityFilter={severityFilter}
-        onSelectSeverity={onSelectSeverity}
-        threatClassFilter={threatClassFilter}
-        onSelectThreatClass={onSelectThreatClass}
-        searchQuery={searchQuery}
-        onSearchChange={onSearchChange}
-        severityCounts={severityCounts}
-      />
+      <div className="px-4 py-3 flex-shrink-0">
+        <IncidentFilters
+          severityFilter={severityFilter}
+          onSelectSeverity={onSelectSeverity}
+          threatClassFilter={threatClassFilter}
+          onSelectThreatClass={onSelectThreatClass}
+          searchQuery={searchQuery}
+          onSearchChange={onSearchChange}
+          severityCounts={severityCounts}
+        />
+      </div>
 
-      {/* Incident Cards Stream */}
-      <div className="space-y-3 overflow-y-auto max-h-[620px] pr-1 scrollbar-thin">
+      {/* Cards */}
+      <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
         {incidents.length === 0 ? (
-          <div className="p-8 text-center bg-[#050811] border border-slate-800 rounded-lg font-mono text-slate-500 text-xs">
-            <Activity className="w-8 h-8 text-slate-600 mx-auto mb-2 animate-pulse" />
-            <p className="font-bold text-slate-400">NO ACTIVE INCIDENTS MATCHING FILTERS</p>
-            <p className="text-[11px] text-slate-500 mt-1">
-              Adjust filters or trigger a synthetic attack scenario from the Demo Control Bar.
-            </p>
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <span className="font-mono text-xs" style={{ color: 'var(--text-dim)' }}>
+              No incidents matching current filters
+            </span>
           </div>
         ) : (
           incidents.map((inc) => (

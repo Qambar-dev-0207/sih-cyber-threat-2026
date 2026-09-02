@@ -13,12 +13,17 @@ export const LatencySparkline: React.FC<LatencySparklineProps> = ({ history, cur
   const padding = 10;
 
   const latencies = useMemo(() => {
-    if (history.length === 0) return [currentLatency, currentLatency];
-    return history.map((h) => h.latency_ms);
+    if (!history || history.length === 0) {
+      const fallback = typeof currentLatency === 'number' && !isNaN(currentLatency) ? currentLatency : 0.03;
+      return [fallback, fallback];
+    }
+    return history
+      .map((h) => (typeof h?.latency_ms === 'number' && !isNaN(h.latency_ms) ? h.latency_ms : 0.03))
+      .filter((v) => typeof v === 'number' && !isNaN(v));
   }, [history, currentLatency]);
 
   const stats = useMemo(() => {
-    if (latencies.length === 0) return { min: 0.2, max: 0.8, avg: 0.4, p99: 0.6 };
+    if (!latencies || latencies.length === 0) return { min: 0.02, max: 0.08, avg: 0.03, p99: 0.05 };
     const min = Math.min(...latencies);
     const max = Math.max(...latencies);
     const sum = latencies.reduce((acc, v) => acc + v, 0);
