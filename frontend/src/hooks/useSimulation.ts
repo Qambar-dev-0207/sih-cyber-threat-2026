@@ -17,6 +17,7 @@ export function useSimulation({ onIncidentGenerated, onSelectIncident }: UseSimu
     async (scenario: ScenarioId) => {
       setIsSimulating(true);
       setActiveScenario(scenario);
+      setLastResult(null);
       setError(null);
 
       const startTime = performance.now();
