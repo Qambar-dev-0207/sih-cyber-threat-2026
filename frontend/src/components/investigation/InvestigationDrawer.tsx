@@ -47,7 +47,7 @@ export const InvestigationDrawer: React.FC<InvestigationDrawerProps> = ({
 
   return (
     <div
-      className="card flex flex-col h-full animate-fadeUp"
+      className="card investigation-drawer flex flex-col h-full animate-fadeUp"
       style={{ borderColor: `${color}30` }}
     >
       {/* Top bar */}
@@ -81,13 +81,8 @@ export const InvestigationDrawer: React.FC<InvestigationDrawerProps> = ({
         </div>
 
         <div className="flex items-center gap-3 flex-shrink-0">
-          <div className="text-right">
-            <div className="font-mono text-2xl font-bold tabular-nums" style={{ color }}>
-              {(incident.risk_score ?? 0).toFixed(0)}
-            </div>
-            <div className="font-mono text-[9px]" style={{ color: 'var(--text-dim)' }}>
-              / 100 RISK
-            </div>
+          <div className="risk-score-ring" style={{ '--risk': `${Math.min(100, incident.risk_score ?? 0)}%`, '--risk-color': color } as React.CSSProperties} aria-label={`Risk score ${(incident.risk_score ?? 0).toFixed(1)} out of 100`}>
+            <div><strong>{(incident.risk_score ?? 0).toFixed(0)}</strong><span>/ 100</span></div>
           </div>
           <button
             onClick={onClose}

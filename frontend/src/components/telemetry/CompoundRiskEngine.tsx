@@ -108,19 +108,19 @@ export const CompoundRiskEngine: React.FC<CompoundRiskEngineProps> = ({ incident
     {
       label: 'EPS MONITOR',
       value: `${(metrics?.events_per_sec ?? 0).toLocaleString()}`,
-      sub: 'Events per second — nominal',
+      sub: 'Events per second, nominal',
       color: '#00C9A7',
     },
     {
       label: 'BANDWIDTH TAP',
       value: `${(metrics?.mbps ?? 0).toFixed(1)} Mb`,
-      sub: 'Line rate — within threshold',
+      sub: 'Line rate, within threshold',
       color: '#60A5FA',
     },
     {
       label: 'PACKET LOSS',
       value: `${(metrics?.packet_loss_pct ?? 0).toFixed(3)}%`,
-      sub: (metrics?.packet_loss_pct ?? 0) < 0.1 ? 'Below alarm line' : 'Elevated — inspect',
+      sub: (metrics?.packet_loss_pct ?? 0) < 0.1 ? 'Below alarm line' : 'Elevated, inspect',
       color: (metrics?.packet_loss_pct ?? 0) > 0.1 ? '#FF4D4D' : '#06D6A0',
     },
   ];
@@ -133,7 +133,7 @@ export const CompoundRiskEngine: React.FC<CompoundRiskEngineProps> = ({ incident
   const assessmentDetail = incident
     ? (isBlocking
         ? `${incident.timeline?.length ?? 0} correlated stages · requires human approval`
-        : `Risk ${riskScore}/100 — continue monitoring`)
+        : `Risk ${riskScore}/100, continue monitoring`)
     : `Buffer ${(metrics?.buffer_utilization_pct ?? 0).toFixed(1)}% · no threshold crossed`;
 
   const action = incident
@@ -241,7 +241,7 @@ export const CompoundRiskEngine: React.FC<CompoundRiskEngineProps> = ({ incident
           <span style={{ color: 'var(--text-secondary)' }}>
             {incident
               ? `${incident.risk_breakdown?.evidence_breakdown?.length ?? 0} detectors fused · synergy bonus +${(incident.risk_breakdown?.synergy_bonus ?? 0).toFixed(1)}`
-              : 'No single sensor crossed its own threshold — compound analysis nominal'}
+              : 'No single sensor crossed its own threshold, compound analysis nominal'}
           </span>
         </div>
       </div>

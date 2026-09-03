@@ -66,13 +66,13 @@ export const IncidentCard: React.FC<IncidentCardProps> = ({ incident, isSelected
       <div className="flex flex-wrap items-center gap-3 text-[10px] font-mono pl-2">
         <div className="flex items-center gap-1">
           <span style={{ color: 'var(--text-dim)' }}>SRC</span>
-          <span style={{ color: 'var(--medium)' }}>{incident.source_ip ?? '—'}</span>
+          <span style={{ color: 'var(--medium)' }}>{incident.source_ip ?? 'n/a'}</span>
         </div>
         <div className="w-px h-3" style={{ background: 'var(--border)' }} />
         <div className="flex items-center gap-1">
           <span style={{ color: 'var(--text-dim)' }}>DST</span>
           <span style={{ color: 'var(--text-primary)' }}>
-            {(incident.target_ips ?? []).slice(0, 2).join(', ') || '—'}
+            {(incident.target_ips ?? []).slice(0, 2).join(', ') || 'n/a'}
             {(incident.target_ips?.length ?? 0) > 2 ? ` +${incident.target_ips.length - 2}` : ''}
           </span>
         </div>

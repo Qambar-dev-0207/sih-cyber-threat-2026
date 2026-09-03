@@ -1,6 +1,6 @@
 import React from 'react';
 import { FusedIncident } from '../../types';
-import { Terminal } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { formatISODate } from '../../utils/formatters';
 
 interface NarrativeCardProps {
@@ -13,9 +13,9 @@ export const NarrativeCard: React.FC<NarrativeCardProps> = ({ incident }) => {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-800 pb-2">
         <div className="flex items-center gap-2">
-          <Terminal className="w-4 h-4 text-cyan-400" />
+          <ShieldCheck className="w-4 h-4 text-cyan-400" />
           <h4 className="text-xs sm:text-sm font-bold tracking-wider text-slate-100 uppercase">
-            AI Incident Triage & Executive Attack Narrative
+            Intelligence briefing
           </h4>
         </div>
         <span className="text-[10px] text-slate-400">
@@ -25,9 +25,9 @@ export const NarrativeCard: React.FC<NarrativeCardProps> = ({ incident }) => {
 
       {/* Narrative Body */}
       <div className="p-3.5 bg-[#050811] rounded border border-slate-800/80 font-sans text-xs text-slate-200 leading-relaxed">
-        <p className="font-mono text-cyan-300 font-bold mb-1.5 text-[11px] uppercase flex items-center gap-1.5">
+          <p className="font-mono text-cyan-300 font-bold mb-1.5 text-[11px] uppercase flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
-          [CORRELATED ATTACK VECTOR: {incident.primary_threat_class}]
+          [HIGH-CONFIDENCE CORRELATED VECTOR: {incident.primary_threat_class}]
         </p>
         <p>{incident.attack_narrative}</p>
       </div>
